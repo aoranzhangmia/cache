@@ -75,6 +75,9 @@ trans-ct.bc: trans.ll ct/CLabInst.so
 trans.ll: trans.c cachelab.h
 	$(CC) $(CFLAGS) -emit-llvm -S -o $@ $<
 
+trans-check.ll: trans.c cachelab.h
+	$(CC) $(CFLAGS) -emit-llvm -S -o $@ $<
+
 tracegen-ct.o: COPT = -O3
 trans-fin.o: COPT = -O3 -fno-unroll-loops
 trans-fin.o: CFLAGS += -DNDEBUG
