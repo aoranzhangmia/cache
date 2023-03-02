@@ -26,7 +26,7 @@
  *     other tricks to hide array data in other forms of local or global memory.
  *
  * TODO: fill in your name and Andrew ID below.
- * @author Your Name <andrewid@andrew.cmu.edu>
+ * @author Aoran Zhang <aoranz@andrew.cmu.edu>
  */
 
 #include <assert.h>
@@ -124,26 +124,25 @@ static void trans_tmp(size_t M, size_t N, double A[N][M], double B[M][N],
  */
 static void transpose_submit(size_t M, size_t N, double A[N][M], double B[M][N],
                              double tmp[TMPCOUNT]) {
-    if (M == N && M % 32 == 0)
-    {
+    if (M == N && M % 32 == 0) {
         int m = (int)M;
         int n = (int)N;
         int i, j, ii, jj;
         int a = 8;
-        for (i = 0; i < n; i += a){
-            for (j = 0; j < m; j += a){
-                for (ii = i; ii < i + a; ii++){
-                    for (jj = j; jj < j + a; jj++){
-                        if (jj != ii){
+        for (i = 0; i < n; i += a) {
+            for (j = 0; j < m; j += a) {
+                for (ii = i; ii < i + a; ii++) {
+                    for (jj = j; jj < j + a; jj++) {
+                        if (jj != ii) {
                             B[jj][ii] = A[ii][jj];
                         }
                     }
-                    if (i == j) B[ii][ii] = A[ii][ii];
+                    if (i == j)
+                        B[ii][ii] = A[ii][ii];
                 }
             }
         }
-    }
-    else if (N == M && N % 32 != 0)
+    } else if (N == M && N % 32 != 0)
         trans_basic(M, N, A, B, tmp);
     else
         trans_tmp(M, N, A, B, tmp);
