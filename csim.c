@@ -1,3 +1,38 @@
+/**
+ * @file csim.c
+ * @brief  A cache simulator
+ *
+ * This simulator should be able to simulate the behavior of a cache memory
+ * with arbitrary size and associativity. At the end of the simulation, it
+ * should output the total number of hits, misses, and evictions, as well as
+ * the number of dirty bytes that have been evicted and the number of dirty
+ * bytes in the cache at the end of the simulation.
+ *
+ * The csim program take the following arguments:
+ *
+ *   @param[in]     h   makes csim-ref print the help message
+ *   @param[in]     v    makes csim-ref be verbose
+ *   @param[in]     s    log2(S) where S is the number of sets
+ *   @param[in]     E    Number of lines each set
+ *   @param[in]     b    log2(B) where B is the block size
+ *   @param[in]     t    The path to tracefile
+ *
+ * A sim function is evaluated by counting the number of hits, misses,
+ * and evictions, as well as tracking the dirty_byte and evictions described
+ * in the writeup.
+ *
+ * Programming restrictions:
+ *   - Should compile without warnings.
+ *   - Must accept the -s, -E, -b, and -t options in any order.
+ *   - No print any extraneous output when verbose mode is not enabled
+ *   - Must exit with a meaningful exit code.
+ *   - No crash even given an invalid trace file or nonsensical command line
+ * arguments
+ *   - Must handle arbitrarily large caches
+ *
+ * TODO: fill in your name and Andrew ID below.
+ * @author Aoran Zhang <aoranz@andrew.cmu.edu>
+ */
 #include "cachelab.h"
 #include <errno.h>
 #include <getopt.h>
@@ -24,10 +59,10 @@ unsigned long dirty_evictions = 0; /* number of dirty bytes evicted */
  * @brief Line structure of a set
  */
 typedef struct {
-    int valid;     /* valid bit set 1 if line has data loaded */
-    int dirty_bit; /* dirty bit set 1 if payload has been modified, but has not
-                      written back to memory */
-    unsigned long tag;        /* tag of line */
+    int valid;         /* set to 1 if line has ever loaded data */
+    int dirty_bit;     /* set 1 if the cache block has been modified but not
+                          written back to memory */
+    unsigned long tag; /* tag of line */
     unsigned long time_stamp; /* counter to achieve LRU counter */
 } line_t;
 
@@ -42,14 +77,14 @@ typedef struct {
  * @brief Cache structure
  */
 typedef struct {
-    int s;       /* Number of set index bits */
-    int E;       /* Associativity (number of lines per set) */
-    int b;       /* Number of block bits */
     set_t *sets; /* pointer to sets of a cache */
 } cache_t;
 
 cache_t *cache;
 
+/**
+ * @brief sim function simulate accesses to memory via a cache
+ */
 void sim(char *op, unsigned long tag, unsigned long index) {
     set_t *set = &(cache->sets[index]);
     for (int i = 0; i < E; i++) {
@@ -57,7 +92,7 @@ void sim(char *op, unsigned long tag, unsigned long index) {
             set->lines[i].time_stamp++;
         }
     }
-    // hit case
+    /*  hit case */
     int hit_place = -1;
     for (int i = 0; i < E; i++) {
         line_t *line = &(set->lines[i]);
@@ -81,8 +116,8 @@ void sim(char *op, unsigned long tag, unsigned long index) {
         }
         return;
     }
-    // miss case
-    // not valid case
+    /* miss case */
+    /* not valid case */
     miss++;
     int has_unused = -1;
     for (int i = 0; i < E; i++) {
@@ -108,7 +143,7 @@ void sim(char *op, unsigned long tag, unsigned long index) {
         }
         return;
     }
-    // eviction case
+    /* eviction case */
     if (v) {
         printf("miss ");
     }
@@ -165,9 +200,6 @@ int process_trace_file(const char *trace) {
         if (cache == NULL) {
             return 1;
         }
-        cache->s = s;
-        cache->b = b;
-        cache->E = E;
         cache->sets = (set_t *)malloc(sizeof(set_t) * (unsigned long)S);
         if (cache->sets == NULL) {
             free(cache);
@@ -224,7 +256,6 @@ int process_trace_file(const char *trace) {
     return parse_error;
 }
 
-
 int main(int argc, char **argv) {
     int opt;
     while ((opt = getopt(argc, argv, "hvs:E:b:t:")) != -1) {
@@ -256,18 +287,18 @@ int main(int argc, char **argv) {
             t = optarg;
             break;
         default:
-            exit(EXIT_FAILURE);
-            // not recognized option
+            exit(1);
+            /* not recognized option */
         }
     }
     if (s == -1 || b == -1 || E == 0 || t == NULL) {
         printf("Mandatory arguments missing or zero.");
-        exit(-1);
-    } // s, b, E, t value not supplied/missing
+        exit(1);
+    } /* s, b, E, t value not supplied/missing */
     if (s < 0 || b < 0 || E < 0 || s + b >= 64) {
         printf("Invalid Arguments.");
-        exit(-1);
-    } // s, b, E value not positive or is too large
+        exit(1);
+    } /* s, b, E value not positive or is too large */
     B = (unsigned long)(1 << b);
     int parse = process_trace_file(t);
     csim_stats_t stats;
