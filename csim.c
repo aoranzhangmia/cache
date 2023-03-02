@@ -14,6 +14,42 @@ int b = -1;
 int S;
 unsigned long B;
 char *t = NULL;
+unsigned long hit = 0;             /* number of hits */
+unsigned long miss = 0;            /* number of misses */
+unsigned long eviction = 0;        /* number of evictions */
+unsigned long dirty_bytes = 0;     /* number of dirty bytes in cache at end */
+unsigned long dirty_evictions = 0; /* number of dirty bytes evicted */
+
+/**
+ * @brief Line structure of a set
+ */
+typedef struct {
+    int valid;     /* valid bit set 1 if line has data loaded */
+    int dirty_bit; /* dirty bit set 1 if payload has been modified, but has not
+                      written back to memory */
+    unsigned long tag;        /* tag of line */
+    unsigned long time_stamp; /* counter to achieve LRU counter */
+} line_t;
+
+/**
+ * @brief Set structure of a cache
+ */
+typedef struct {
+    line_t *lines; /* pointer to lines of a set */
+} set_t;
+
+/**
+ * @brief Cache structure
+ */
+typedef struct {
+    int s;       /* Number of set index bits */
+    int E;       /* Associativity (number of lines per set) */
+    int b;       /* Number of block bits */
+    set_t *sets; /* pointer to sets of a cache */
+} cache_t;
+
+cache_t *cache;
+
 
 
 /** Process a memory -access trace file.
