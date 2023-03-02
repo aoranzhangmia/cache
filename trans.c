@@ -134,13 +134,11 @@ static void transpose_submit(size_t M, size_t N, double A[N][M], double B[M][N],
             for (j = 0; j < m; j += a){
                 for (ii = i; ii < i + a; ii++){
                     for (jj = j; jj < j + a; jj++){
-                        if (ii == jj){
-                            tmp[TMPCOUNT - 1] = A[ii][jj];
-                        } else {
+                        if (jj != ii){
                             B[jj][ii] = A[ii][jj];
                         }
                     }
-                    if (i == j) B[ii][ii] = tmp[TMPCOUNT - 1];
+                    if (i == j) B[ii][ii] = A[ii][ii];
                 }
             }
         }
