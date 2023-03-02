@@ -50,7 +50,102 @@ typedef struct {
 
 cache_t *cache;
 
-
+void sim(char *op, unsigned long tag, unsigned long index) {
+    set_t *set = &(cache->sets[index]);
+    for (int i = 0; i < E; i++) {
+        if (set->lines[i].valid == 1) {
+            set->lines[i].time_stamp++;
+        }
+    }
+    // hit case
+    int hit_place = -1;
+    for (int i = 0; i < E; i++) {
+        line_t *line = &(set->lines[i]);
+        if (line->valid == 1 && line->tag == tag) {
+            hit++;
+            line->time_stamp = 0;
+            hit_place = i;
+            break;
+        }
+    }
+    if (hit_place >= 0) {
+        for (int j = hit_place; j < E; j++) {
+            set->lines[j].time_stamp++;
+        }
+        if (strcmp(op, "S") == 0 && set->lines[hit_place].dirty_bit == 0) {
+            set->lines[hit_place].dirty_bit = 1;
+            dirty_bytes += B;
+        }
+        if (v) {
+            printf("hit\n");
+        }
+        return;
+    }
+    // miss case
+    // not valid case
+    miss++;
+    int has_unused = -1;
+    for (int i = 0; i < E; i++) {
+        line_t *line = &(set->lines[i]);
+        if (line->valid == 0) {
+            line->valid = 1;
+            line->tag = tag;
+            line->time_stamp = 0;
+            has_unused = i;
+            break;
+        }
+    }
+    if (has_unused >= 0) {
+        for (int j = has_unused; j < E; j++) {
+            set->lines[j].time_stamp++;
+        }
+        if (strcmp(op, "S") == 0) {
+            set->lines[has_unused].dirty_bit = 1;
+            dirty_bytes += B;
+        }
+        if (v) {
+            printf("miss\n");
+        }
+        return;
+    }
+    // eviction case
+    if (v) {
+        printf("miss ");
+    }
+    eviction++;
+    int evind = 0;
+    unsigned long max = set->lines[0].time_stamp;
+    for (int i = 0; i < E; i++) {
+        line_t *line = &(set->lines[i]);
+        if (line->time_stamp > max) {
+            evind = i;
+            max = line->time_stamp;
+        }
+    }
+    set->lines[evind].time_stamp = 0;
+    set->lines[evind].tag = tag;
+    for (int j = 0; j < evind; j++) {
+        set->lines[j].time_stamp++;
+    }
+    for (int j = evind + 1; j < E; j++) {
+        set->lines[j].time_stamp++;
+    }
+    if (set->lines[evind].dirty_bit == 1) {
+        dirty_evictions += B;
+        if (strcmp(op, "L") == 0) {
+            dirty_bytes -= B;
+            set->lines[evind].dirty_bit = 0;
+        }
+    } else {
+        if (strcmp(op, "S") == 0) {
+            set->lines[evind].dirty_bit = 1;
+            dirty_bytes += B;
+        }
+    }
+    if (v) {
+        printf("eviction\n");
+    }
+}
 
 /** Process a memory -access trace file.
  *
@@ -174,5 +269,14 @@ int main(int argc, char **argv) {
         exit(-1);
     } // s, b, E value not positive or is too large
     B = (unsigned long)(1 << b);
+    int parse = process_trace_file(t);
+    csim_stats_t stats;
+    stats.hits = hit;
+    stats.misses = miss;
+    stats.evictions = eviction;
+    stats.dirty_bytes = dirty_bytes;
+    stats.dirty_evictions = dirty_evictions;
+    printSummary(&stats);
+
     return 0;
 }
