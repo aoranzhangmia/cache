@@ -278,5 +278,5 @@ int main(int argc, char **argv) {
     stats.dirty_evictions = dirty_evictions;
     printSummary(&stats);
 
-    return 0;
+    return parse;
 }
